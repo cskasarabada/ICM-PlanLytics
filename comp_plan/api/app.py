@@ -9,7 +9,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from comp_plan.api.routes import router
+from comp_plan.api.routes import router as plan_router
+from comp_plan.api.landing import router as landing_router
+from comp_plan.api.admin_routes import router as admin_router
+from comp_plan.api.auth_routes import router as auth_router
 
 app = FastAPI(
     title="ICM PlanLytics - Compensation Plan Analysis",
@@ -25,27 +28,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount plan routes
-app.include_router(router, prefix="/plan", tags=["Plan Analysis"])
+# Mount route groups
+app.include_router(landing_router, tags=["Landing"])
+app.include_router(plan_router, prefix="/plan", tags=["Plan Analysis"])
+app.include_router(admin_router, prefix="/admin", tags=["Admin Dashboard"])
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 
 # Mount static files for exports
 data_dir = Path("data")
 outputs_dir = data_dir / "outputs"
 outputs_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/files", StaticFiles(directory=str(outputs_dir)), name="files")
-
-
-@app.get("/")
-def root():
-    return {
-        "name": "ICM PlanLytics",
-        "version": "1.0.0",
-        "description": "Compensation Plan Analysis with inherent PII protection",
-        "endpoints": {
-            "ui": "/plan/ui",
-            "analyze": "POST /plan/analyze",
-            "oracle_export": "POST /plan/oracle-export",
-            "health": "/plan/healthz",
-            "docs": "/docs",
-        },
-    }
